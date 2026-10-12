@@ -20,43 +20,59 @@ foreach ($dirs as $dir) {
     }
 }
 
-// Copy initial database.sqlite to /tmp if it doesn't exist
-$localSqlite = dirname(__DIR__) . '/database/database.sqlite';
-$tmpSqlite = '/tmp/database.sqlite';
-if (!file_exists($tmpSqlite)) {
-    if (file_exists($localSqlite)) {
-        @copy($localSqlite, $tmpSqlite);
-    } else {
-        @touch($tmpSqlite);
+// Helper to set environment variable if not already defined
+function setEnvDefault(string $key, string $default): void {
+    $existing = getenv($key);
+    if ($existing === false || $existing === '') {
+        $existing = $_ENV[$key] ?? ($_SERVER[$key] ?? null);
     }
-    @chmod($tmpSqlite, 0666);
+    $value = ($existing !== null && $existing !== false && $existing !== '') ? (string) $existing : $default;
+    putenv("{$key}={$value}");
+    $_ENV[$key] = $value;
+    $_SERVER[$key] = $value;
 }
 
-// Essential Serverless Environment Settings
-$serverlessEnv = [
-    'APP_ENV' => 'production',
-    'APP_DEBUG' => 'true',
-    'APP_KEY' => getenv('APP_KEY') ?: 'base64:XzkH+qVgx+YfQzJe3xNS+cqgdjgyxHnfr4TpRztuiic=',
-    'APP_STORAGE' => '/tmp/storage',
-    'VIEW_COMPILED_PATH' => '/tmp/storage/framework/views',
-    'APP_SERVICES_CACHE' => '/tmp/bootstrap-cache/services.php',
-    'APP_PACKAGES_CACHE' => '/tmp/bootstrap-cache/packages.php',
-    'APP_CONFIG_CACHE' => '/tmp/bootstrap-cache/config.php',
-    'APP_ROUTES_CACHE' => '/tmp/bootstrap-cache/routes.php',
-    'APP_EVENTS_CACHE' => '/tmp/bootstrap-cache/events.php',
-    'CACHE_STORE' => 'array',
-    'CACHE_DRIVER' => 'array',
-    'SESSION_DRIVER' => 'cookie',
-    'LOG_CHANNEL' => 'stderr',
-    'DB_CONNECTION' => 'sqlite',
-    'DB_DATABASE' => '/tmp/database.sqlite',
-];
+// Storage paths for serverless read-only filesystem
+setEnvDefault('APP_STORAGE', '/tmp/storage');
+setEnvDefault('LARAVEL_STORAGE_PATH', '/tmp/storage');
+setEnvDefault('VIEW_COMPILED_PATH', '/tmp/storage/framework/views');
+setEnvDefault('APP_SERVICES_CACHE', '/tmp/bootstrap-cache/services.php');
+setEnvDefault('APP_PACKAGES_CACHE', '/tmp/bootstrap-cache/packages.php');
+setEnvDefault('APP_CONFIG_CACHE', '/tmp/bootstrap-cache/config.php');
+setEnvDefault('APP_ROUTES_CACHE', '/tmp/bootstrap-cache/routes.php');
+setEnvDefault('APP_EVENTS_CACHE', '/tmp/bootstrap-cache/events.php');
 
-foreach ($serverlessEnv as $key => $val) {
-    putenv("{$key}={$val}");
-    $_ENV[$key] = $val;
-    $_SERVER[$key] = $val;
+// Application defaults
+setEnvDefault('APP_ENV', 'production');
+setEnvDefault('APP_DEBUG', 'true');
+setEnvDefault('APP_KEY', 'base64:XzkH+qVgx+YfQzJe3xNS+cqgdjgyxHnfr4TpRztuiic=');
+setEnvDefault('LOG_CHANNEL', 'stderr');
+setEnvDefault('CACHE_STORE', 'array');
+setEnvDefault('CACHE_DRIVER', 'array');
+setEnvDefault('SESSION_DRIVER', 'cookie');
+
+// Database setup: Only fall back to /tmp/database.sqlite if DB_CONNECTION is not externally configured
+$dbConnection = getenv('DB_CONNECTION') ?: ($_ENV['DB_CONNECTION'] ?? ($_SERVER['DB_CONNECTION'] ?? 'sqlite'));
+setEnvDefault('DB_CONNECTION', $dbConnection);
+
+if ($dbConnection === 'sqlite') {
+    $localSqlite = dirname(__DIR__) . '/database/database.sqlite';
+    $tmpSqlite = '/tmp/database.sqlite';
+
+    if (!file_exists($tmpSqlite) || filesize($tmpSqlite) === 0) {
+        if (file_exists($localSqlite) && filesize($localSqlite) > 0) {
+            @copy($localSqlite, $tmpSqlite);
+        } else {
+            @touch($tmpSqlite);
+        }
+        @chmod($tmpSqlite, 0666);
+    }
+
+    setEnvDefault('DB_DATABASE', $tmpSqlite);
 }
 
-// Forward to public/index.php
+// Normalize SCRIPT_NAME so Symfony Request doesn't strip '/api' prefix from API routes
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+
+// Forward request to Laravel public front controller
 require dirname(__DIR__) . '/public/index.php';
