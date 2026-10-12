@@ -46,6 +46,28 @@
             </button>
         </form>
 
+        <!-- Fast 1-Click Demo Login Switcher -->
+        <div class="pt-4 border-t border-slate-100 space-y-2">
+            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Fast Demo 1-Click Sign In</div>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ route('demo.login', 'admin') }}" 
+                   class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 transition group">
+                    <span class="text-xs font-bold">⚡ Admin</span>
+                    <span class="text-[9px] text-rose-500 font-medium mt-0.5">Full Control</span>
+                </a>
+                <a href="{{ route('demo.login', 'vendor') }}" 
+                   class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 transition group">
+                    <span class="text-xs font-bold">📦 Vendor</span>
+                    <span class="text-[9px] text-indigo-500 font-medium mt-0.5">GearHub</span>
+                </a>
+                <a href="{{ route('demo.login', 'customer') }}" 
+                   class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 transition group">
+                    <span class="text-xs font-bold">🛒 Buyer</span>
+                    <span class="text-[9px] text-emerald-500 font-medium mt-0.5">Customer</span>
+                </a>
+            </div>
+        </div>
+
         <div class="text-center text-xs text-slate-500 pt-2 border-t border-slate-100 space-y-2">
             <div>Don't have an account? <a href="{{ route('register') }}" class="font-bold text-indigo-600 hover:underline">Sign up as buyer</a></div>
             <div>Want to sell? <a href="{{ route('vendor.register') }}" class="font-bold text-amber-600 hover:underline">Register vendor store</a></div>
