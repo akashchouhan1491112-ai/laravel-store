@@ -23,8 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })->create();
 
-if (env('APP_STORAGE')) {
-    $app->useStoragePath(env('APP_STORAGE'));
+$storagePath = env('APP_STORAGE');
+if (!$storagePath && file_exists('/tmp') && DIRECTORY_SEPARATOR === '/') {
+    $storagePath = '/tmp/storage';
+}
+
+if ($storagePath) {
+    $app->useStoragePath($storagePath);
 }
 
 return $app;
